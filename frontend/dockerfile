@@ -1,4 +1,4 @@
-# --- Stage 1: Build the React application ---
+# --- Stage 1: Build Stage ---
 FROM node:20-alpine AS build
 
 WORKDIR /app
@@ -7,21 +7,18 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-# Copy the rest of the application code
+# Copy the rest of your frontend code
 COPY . .
 
-# Build the project (generates the 'dist' or 'build' folder)
+# Build the Vite project (generates the 'dist' folder)
 RUN npm run build
 
-# --- Stage 2: Serve the application with Nginx ---
+# --- Stage 2: Production Stage ---
 FROM nginx:stable-alpine
 
-# Copy the build output from Stage 1 to Nginx's HTML directory
-# Note: Change 'dist' to 'build' if you are using Create React App instead of Vite
+# Copy the 'dist' folder from the build stage to Nginx
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Expose port 80 to the outside world
 EXPOSE 80
 
-# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]
