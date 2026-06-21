@@ -1,0 +1,79 @@
+name: CI Build and Push to Docker Hub
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  # unit-testing:
+  #   runs-on: ubuntu-latest
+  #   name: Run Unit Tests
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Install Dependencies and Run Tests
+  #       run: |
+  #         npm ci 
+  #         npm test
+  
+  # security-scan:
+  #   runs-on: ubuntu-latest
+  #   name: Run Security Scan
+  #   needs: unit-testing
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - run: npm audit --audit-level=high||true
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    name: Build and Push Docker Image
+    # Removed "needs: security-scan" since it is commented out above
+    steps:
+      - name: Checkout Application Code
+        uses: actions/checkout@v4
+
+      # 🚀 Step 2: Log in to Docker Hub using Access Tokens
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 🚀 Step 3: Build and Push directly to Docker Hub Registry
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: frontend/dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/payment-service:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/payment-service:latest
+
+      # Step 4: GitOps - Update Manifest Repo with Docker Hub Image Path
+      - name: Update GitOps Manifest Token Tag
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+          IMAGE_TAG: ${{ github.sha }}
+          DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git clone https://$GH_PAT@github.com/${{ github.repository_owner }}/payment-service-gitops.git
+          cd payment-service-gitops
+          
+          # 🚀 AUTOMATION: Updates the image field structure to match standard Docker Hub naming convention
+          FULL_IMAGE_URI="$DOCKERHUB_USER/payment-service"
+          
+          sed -i "s|repository: .*|repository: $FULL_IMAGE_URI|g" charts/payment-service/values.yaml
+          sed -i "s/tag: .*/tag: \"$IMAGE_TAG\"/g" charts/payment-service/values.yaml
+          
+          git add charts/payment-service/values.yaml
+          
+          if git diff --staged --quiet; then
+            echo "No image change detected. Infrastructure is perfectly up to date."
+          else
+            git commit -m "automation: dynamically update registry URI to Docker Hub and image tag to $IMAGE_TAG"
+            git push https://$GH_PAT@github.com/${{ github.repository_owner }}/payment-service-gitops.git main
+          fi
