@@ -1,0 +1,29 @@
+/* styles/theme.css
+   Design tokens for the Voxel Architect interface.
+
+   Direction: an instrument panel, not a "hacker terminal." Deep graphite
+   base, warm bone text, neutral chrome — the only color in the UI is the
+   voxel palette itself (the active build color), so the interface reads
+   as calm scaffolding around whatever the person is sculpting.
+*/
+
+:root {
+  --va-bg: #0b0d10;
+  --va-panel: rgba(13, 15, 18, 0.72);
+  --va-panel-border: rgba(237, 232, 223, 0.12);
+  --va-text: #ede8df;
+  --va-text-dim: rgba(237, 232, 223, 0.5);
+  --va-text-faint: rgba(237, 232, 223, 0.28);
+
+  --va-tone-idle: rgba(237, 232, 223, 0.6);
+  --va-tone-active: #3e82f1;
+  --va-tone-warning: #ffd166;
+  --va-tone-error: #ff6b6b;
+
+  --va-hand-left: #ede8df;
+  --va-hand-right: #ffb74d;
+
+  --va-font-display: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  --va-radius-sm: 3px;
+  --va-radius-md: 6px;
+}
